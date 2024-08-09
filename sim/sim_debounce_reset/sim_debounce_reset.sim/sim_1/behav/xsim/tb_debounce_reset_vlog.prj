@@ -1,0 +1,11 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  \
+"../../../../../../src/rtl/aasd_reset/aasd_reset.v" \
+"../../../../../../src/rtl/debounce/debounce.v" \
+"../../../../../../src/rtl/aasd_reset/tb_debounce_reset.v" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort
