@@ -49,7 +49,8 @@ module sccb_core #(
   output wire        cs_start_clk_cnt_q
 );
 
-  //SIOC_PERIOD equals number of 100MHz clock cycles in SIOC_FREQ clock cycle
+  //SIOC_PERIOD equals half the number of 100MHz clock cycles in 1 SIOC_FREQ clock cycle
+  //before SIOC needs to toggle.
   localparam SIOC_PERIOD = (100_000_000/(SIOC_FREQ*2));
   localparam SIOC_HALF_PERIOD = ((100_000_000/(SIOC_FREQ*2))/2);
   
@@ -122,9 +123,9 @@ module sccb_core #(
       bit_in_byte_q <= 8;
     end else begin
       if (update_index) begin
-        if (/*(bit_in_byte_q == 0) && */(pstate_q == `STOP_2) /*|| (pstate_q == `RENEW_TX_DATA)*/)
+        if (((!verify_reg_q) && (pstate_q == `ACK_SLAVE)) || (pstate_q == `STOP_2))
           bit_in_byte_q <= 8;
-        else if (verify_reg_q && tx_byte_q[1] && (pstate_q == `ACK_SLAVE))
+        else if (verify_reg_q && (pstate_q == `ACK_SLAVE))
           bit_in_byte_q <= 7;
         else
           bit_in_byte_q <= bit_in_byte_q - 1;
@@ -187,7 +188,6 @@ module sccb_core #(
           siod_d <= tx_byte_q[bit_in_byte_q];
           update_index <= (bit_in_byte_q == 0) ? 1'b0 : 1'b1;
           if (bit_in_byte_q == 0) begin
-            //siod_d <= tx_byte_q[0];
             nstate <= `ACK_SLAVE;
           end else 
             nstate <= `TX_DATA;
@@ -199,29 +199,29 @@ module sccb_core #(
       //Assert o_ack which will prompt sccb_top to assert i_tx_stop if all bytes of current 
       //transaction have been transmitted to slave causing the state machine to enter into  
       //IDLE state to make ready for read transaction, RX_DATA when within a read transaction,
-      //or RENEW_TX_DATA state to transmit the next byte
+      //or RENEW_TX_DATA state to transmit the next byte.
       `ACK_SLAVE: begin
         o_siod_oe <= 1'b0;
         if (sioc_hi) begin
           o_ack <= 1'b1;
           if (i_tx_stop)
             nstate <= `STOP_1;
-          else if (verify_reg_q && tx_byte_q[1]) begin
+          else if (verify_reg_q) begin
             update_verify <= 1'b1; //Clear verify_reg_q
             update_index  <= 1'b1; //Reset bit_in_byte_q to 7
             nstate        <= `RX_DATA;
-          end else 
+          end else begin
+            update_index <= 1'b1; //Reset bit_in_byte_q to 8
             nstate <= `RENEW_TX_DATA;
+          end
         end else
           nstate <= `ACK_SLAVE;
       end
       
-      //bit_in_byte_q will be 0 transitioning into this state
-      //and will thus reset it to 8 upon assertion of update_index.
+      //bit_in_byte_q will be 8 transitioning into this state.
       `RENEW_TX_DATA: begin
         o_siod_oe    <= 1'b0;
         tx_byte_d    <= {i_tx_data, 1'b1};
-        //update_index <= 1'b1;
         if (sioc_lo) begin
           update_index <= 1'b1;
           siod_d <= tx_byte_q[bit_in_byte_q]; //This line ensures that MSB of next byte is ready to transmit
@@ -230,7 +230,7 @@ module sccb_core #(
           nstate <= `RENEW_TX_DATA;
       end
         
-      //bit_in_byte_q will be reset to 8 transitioning from RX_DATA to ACK_MASTER
+      //bit_in_byte_q will be 7 transitioning into this state.
 	  `RX_DATA: begin
         o_siod_oe <= 1'b0;
         if (sioc_hi) begin
