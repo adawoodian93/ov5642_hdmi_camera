@@ -278,8 +278,10 @@ module sccb_core #(
         update_index <= 1'b1;
         if (sioc_hi) begin
           siod_d <= 1'b1;
+		 nstate <= `STOP_2;
+        end else if (siod_q)
           nstate <= `IDLE;
-        end else
+        else
           nstate <= `STOP_2;
       end
       
