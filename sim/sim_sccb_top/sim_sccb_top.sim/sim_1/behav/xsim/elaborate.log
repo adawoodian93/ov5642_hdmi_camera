@@ -11,6 +11,7 @@ Time Resolution for simulation is 1ps
 Compiling module xil_defaultlib.sccb_core(SIOC_FREQ=1000000)
 Compiling module xil_defaultlib.ov5642_init_regs
 Compiling module xil_defaultlib.sccb_top
+Compiling module xil_defaultlib.sccb_slave(SIOC_FREQ=1000000)
 Compiling module xil_defaultlib.tb_sccb_top
 Compiling module xil_defaultlib.glbl
 Built simulation snapshot tb_sccb_top_behav

@@ -2,6 +2,7 @@
 verilog xil_defaultlib  \
 "../../../../../../src/rtl/sccb_top/ov5642_init_regs.v" \
 "../../../../../../src/rtl/sccb_top/sccb_core.v" \
+"../../../../../../src/rtl/sccb_top/sccb_slave.v" \
 "../../../../../../src/rtl/sccb_top/sccb_top.v" \
 "../../../../../../src/rtl/sccb_top/tb_sccb_top.v" \
 
