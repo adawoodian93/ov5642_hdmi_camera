@@ -9,7 +9,7 @@ module ov5642_init_regs (
     case (i_addr)
       10'd0: {o_verify, o_data} <= {1'b1, 24'h3103_93};
       10'd1: {o_verify, o_data} <= {1'b1, 24'h3008_82};
-      /*10'd2: {o_verify, o_data} <= {1'b1, 24'h3017_7f};
+      10'd2: {o_verify, o_data} <= {1'b1, 24'h3017_7f};
       10'd3: {o_verify, o_data} <= {1'b1, 24'h3018_fc};
       10'd4: {o_verify, o_data} <= {1'b1, 24'h3810_c2};
       10'd5: {o_verify, o_data} <= {1'b1, 24'h3615_f0};
@@ -542,7 +542,7 @@ module ov5642_init_regs (
       10'd532: {o_verify, o_data} <= {1'b1, 24'h568c_fe};
       10'd533: {o_verify, o_data} <= {1'b1, 24'h568d_ef};
       10'd534: {o_verify, o_data} <= {1'b1, 24'h568e_aa};
-      10'd535: {o_verify, o_data} <= {1'b1, 24'h568f_aa};*/
+      10'd535: {o_verify, o_data} <= {1'b1, 24'h568f_aa};
       default: {o_verify, o_data} = {1'b0, 24'hffff_ff};
     endcase
   end
