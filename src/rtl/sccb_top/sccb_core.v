@@ -153,14 +153,14 @@ module sccb_core #(
     rx_byte_d     <= rx_byte_q;
     o_tx_ready    <= 1'b0;
     o_rx_ready    <= 1'b0;
-    o_siod_oe     <= 1'b1;
+    o_siod_oe     <= 1'b0;
     o_ack         <= 1'b0;
     update_index  <= 1'b0;
     update_verify <= 1'b0;
     case (pstate_q)
       //siod = z
       `IDLE: begin
-        o_siod_oe  <= 1'b0;
+        o_siod_oe  <= 1'b1;
         o_tx_ready <= 1'b1;
         if (i_tx_start) 
           nstate <= `START;
@@ -201,7 +201,7 @@ module sccb_core #(
       //IDLE state to make ready for read transaction, RX_DATA when within a read transaction,
       //or RENEW_TX_DATA state to transmit the next byte.
       `ACK_SLAVE: begin
-        o_siod_oe <= 1'b0;
+        o_siod_oe <= 1'b1;
         if (sioc_hi) begin
           o_ack <= 1'b1;
           if (i_tx_stop)
@@ -220,7 +220,7 @@ module sccb_core #(
       
       //bit_in_byte_q will be 8 transitioning into this state.
       `RENEW_TX_DATA: begin
-        o_siod_oe    <= 1'b0;
+        o_siod_oe    <= 1'b1;
         tx_byte_d    <= {i_tx_data, 1'b1};
         if (sioc_lo) begin
           update_index <= 1'b1;
@@ -232,30 +232,18 @@ module sccb_core #(
         
       //bit_in_byte_q will be 7 transitioning into this state.
 	  `RX_DATA: begin
-        o_siod_oe <= 1'b0;
+        o_siod_oe <= 1'b1;
         if (sioc_hi) begin
-          rx_byte_d[bit_in_byte_q] <= i_siod_in; //io_siod;
+          rx_byte_d[bit_in_byte_q] <= i_siod_in;
           update_index <= 1'b1;
           nstate <= `RX_DATA;
-        end else if (sioc_lo && (bit_in_byte_q == 0)) begin
-            //update_index <= 1'b1;
-            nstate       <= `ACK_MASTER;
+          if (bit_in_byte_q == 0) begin //Checks to see if last bit has been received from slave during sioc_hi before updating index
+            update_index <= 1'b0;
+            nstate <= `ACK_MASTER;
+          end
         end else
           nstate <= `RX_DATA;
       end
-      // `RX_DATA: begin
-        // o_siod_oe <= 1'b0;
-        // if (sioc_hi) begin
-          // rx_byte_d[bit_in_byte_q] <= i_siod_in; //io_siod;
-          // update_index <= 1'b1;
-          // if (bit_in_byte_q == 0) begin
-            // update_index <= 1'b1;
-            // nstate       <= `ACK_MASTER;
-          // end else
-            // nstate <= `RX_DATA;
-        // end else
-          // nstate <= `RX_DATA;
-      // end
       
       `ACK_MASTER: begin
         if (sioc_hi) begin
@@ -295,7 +283,6 @@ module sccb_core #(
   assign o_rx_data          = rx_byte_q;
   assign o_sioc             = sioc_q;
   assign o_siod_out         = siod_q;
-  //assign io_siod = ((pstate_q == `IDLE) || (pstate_q == `RX_DATA) || (pstate_q == `ACK_SLAVE)) ? 1'bz : siod_q;
   assign cs_sioc_q          = sioc_q;       
   assign cs_siod_q          = siod_q;       
   assign cs_tx_byte_q       = tx_byte_q;    

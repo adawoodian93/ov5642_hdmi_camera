@@ -1,10 +1,11 @@
-//State machine states
+`timescale 1ns / 1ps
+
+// State definitions
 `define IDLE                 3'b000
 `define ID_ADDRESS           3'b001
 `define SUB_ADDRESS_AND_DATA 3'b010
 `define RD_DATA              3'b011
 
-`timescale 1ns / 1ps
 module sccb_slave #(
 	parameter SIOC_FREQ = 100000)
 (
@@ -37,18 +38,18 @@ module sccb_slave #(
 	localparam SIOC_PERIOD = (100_000_000/(SIOC_FREQ*2));
 	localparam SIOC_HALF_PERIOD = ((100_000_000/(SIOC_FREQ*2))/2);
 	
-	reg       siod_in_q;
-	reg       sioc_q;
-	reg [3:0] sioc_hi_cnt_q;
-	reg [3:0] sioc_lo_cnt_q;
-	reg [7:0] id_addr_q;
-	reg [3:0] id_addr_bit_q;
-	reg [3:0] bit_cnt_q;
-	reg [1:0] byte_cnt_q;
-	reg [7:0] wr_data_q;
-	reg [3:0] wr_data_cnt_q;
-	reg [2:0] pstate_q;
-	reg [2:0] nstate;
+	reg        siod_in_q;
+	reg        sioc_q;
+	reg [15:0] sioc_hi_cnt_q;
+	reg [15:0] sioc_lo_cnt_q;
+	reg [7:0]  id_addr_q;
+	reg [3:0]  id_addr_bit_q;
+	reg [3:0]  bit_cnt_q;
+	reg [1:0]  byte_cnt_q;
+	reg [7:0]  wr_data_q;
+	reg [3:0]  wr_data_cnt_q;
+	reg [2:0]  pstate_q;
+	reg [2:0]  nstate;
 	
 	wire      siod_fedge;
 	wire      siod_redge;
@@ -152,9 +153,9 @@ module sccb_slave #(
 			end
 			
 			`ID_ADDRESS: begin
-				if ((id_addr_bit_q == 8) && (!id_addr_q[0]))
+				if (sioc_redge && (id_addr_bit_q == 8) && (!id_addr_q[0]))
 					nstate = `SUB_ADDRESS_AND_DATA;
-				else if ((id_addr_bit_q == 8) && id_addr_q[0])
+				else if (sioc_redge && (id_addr_bit_q == 8) && id_addr_q[0])
 					nstate = `RD_DATA;
 				else
 					nstate = pstate_q;

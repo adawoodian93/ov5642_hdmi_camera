@@ -18,7 +18,6 @@ module sccb_top (
   input wire         i_siod_in,
   output wire        o_siod_out,
   output wire        o_siod_oe,
-  // inout wire io_siod,
   
   // Status LEDs
   output reg         o_done_led,
@@ -34,7 +33,7 @@ module sccb_top (
   output wire [1:0]  cs_err_cnt_q,
   output wire        cs_update_tx_byte,
   output wire        cs_update_rx_byte,
-  output wire        cs_init_done_q,
+  output wire        cs_init_done,
   output wire        cs_inc_addr,
   output wire [2:0]  cs_pstate_q_top,
   output wire [7:0]  cs_rx_data,
@@ -70,7 +69,6 @@ module sccb_top (
   reg [2:0]   byte_cnt_q;
   reg [1:0]   err_cnt_q;  
   reg         update_tx_byte, update_rx_byte, update_err_cnt;
-  // reg         init_done_q;
   reg         inc_addr;
   reg [2:0]   nstate, pstate_q;
   reg         start_init_q;
@@ -83,9 +81,6 @@ module sccb_top (
   wire        verify_reg;
   wire        ack;
   wire        init_done;
-  // wire        siod_in;
-  // wire        siod_out;
-  // wire        siod_oe;
   
   sccb_core #(.SIOC_FREQ(1000000)) u_sccb (
     .i_clk             (i_clk           ),
@@ -115,16 +110,6 @@ module sccb_top (
     .cs_clk_cnt_q      (cs_clk_cnt_q    ),
     .cs_start_clk_cnt_q(                )
   );
-  
-  // assign siod_in = io_siod;
-  // assign io_soid = (siod_oe) ? siod_out : 1'bz;
-  
-  // IOBUF u_iobuf_sccb (
-    // .I (siod_out),
-    // .T (!siod_oe),
-    // .IO(io_siod),
-    // .O (siod_in)
-  // );
   
   ov5642_init_regs u_init_regs (
     .i_addr  (reg_idx_q           ),
@@ -159,7 +144,7 @@ module sccb_top (
         
         3: begin
           tx_data_q  <= reg_data;
-          byte_cnt_q <= 0; //byte_cnt_q + 1;
+          byte_cnt_q <= 0;
         end
         
         default: begin
@@ -178,7 +163,7 @@ module sccb_top (
 
   always @(posedge i_clk) begin
     if (i_rst)
-	  reg_idx_q <= 10'h000; //8'hff;
+	  reg_idx_q <= 10'h000;
 	else if (inc_addr)
 	  reg_idx_q <= reg_idx_q + 1;
   end
@@ -191,15 +176,6 @@ module sccb_top (
 	else if (o_done_led || o_err_led)
 	  start_init_q <= 1'b0;
   end
-  
-  // always @(posedge i_clk) begin
-    // if (i_rst)
-	  // init_done_q <= 1'b0;
-	// else if ({reg_addr, reg_data} == 24'hffff_ff)
-	  // init_done_q <= 1'b1;
-  // else 
-    // init_done_q <= 1'b0;
-  // end
   
   always @(posedge i_clk) begin
     if (i_rst)
@@ -220,12 +196,19 @@ module sccb_top (
     update_tx_byte <= 1'b0;
     update_err_cnt <= 1'b0;
     case (pstate_q)
+      //Check for done condition was also added to IDLE state because in VERIFY state
+      //the register address incrementing (inc_addr) and state transition to IDLE takes
+      //one clock cycle. Therefore, the register address and the data to be written will
+      //update when transitioning back to IDLE from VERIFY state.
       `IDLE: begin
         if (tx_ready && start_init_q) begin
-          start          <= 1'b1;
-          //inc_addr       <= 1'b1;
-          update_tx_byte <= 1'b1;
-          nstate         <= `INIT_REG;
+          if (init_done)
+            nstate <= `DONE;
+          else begin 
+            start          <= 1'b1;
+            update_tx_byte <= 1'b1;
+            nstate         <= `INIT_REG;
+          end
         end else
           nstate <= `IDLE;
       end
@@ -234,15 +217,21 @@ module sccb_top (
       //current config value has been transmitted. Only
       //when a register that needs verification will
       //transistion the FSM into the VERIFY state.
-      //byte_cnt_q will reset back to 0 transitioning 
+      //byte_cnt_q will be 0 transitioning 
       //to VERIFY state.
       //Increment register module's address on final 'ack'
       //of current register address/data pair as opposed to
       //receipt of tx_ready from sccb_core. This will avoid
-      //timing issues with the final register/data pair so that
+      //timing issues with the final address/data pair so that
       //init_done is asserted before sccb_core enters its IDLE
       //state so that we do not start another transmission
       //unnecessarily.
+	  //Increment address on second sub-address byte in write transmission
+	  //so that when updating TX byte on write data byte of current write transmission
+	  //the ID address of the next write transmission is ready to be transmitted.
+	  //Address is not incremented when register verification is required so that 
+	  //data read from slave can be properly compared with the data that was transmitted
+	  //during the write transmission.
       `INIT_REG: begin
         if (tx_ready && verify_reg) begin
           start          <= 1'b1;
@@ -250,47 +239,32 @@ module sccb_top (
           nstate         <= `VERIFY;
         end else if (tx_ready && !verify_reg && !init_done) begin
           start    <= 1'b1;
-          //inc_addr <= 1'b1;
           nstate   <= `INIT_REG;
         end else if (ack) begin   
-          update_tx_byte <= 1'b1;
+          update_tx_byte <= (verify_reg && (byte_cnt_q == 0)) ? 1'b0 : 1'b1;
           nstate         <= `INIT_REG;
-          if (byte_cnt_q == 0) begin //byte_cnt_q > 3
-            //inc_addr <= 1'b1;
-            stop     <= 1'b1;
-            if (init_done) begin
-              update_tx_byte <= 1'b0;
-              nstate <= `DONE;
-            end
-          end else if (byte_cnt_q == 3)
+          if (byte_cnt_q == 0) begin
+            stop <= 1'b1;
+          end else if ((byte_cnt_q == 3) && (!verify_reg))
             inc_addr <= 1'b1;
-        /*end else if (tx_ready && init_done) //(tx_ready && !verify_reg && init_done_q) 
-          nstate <= `DONE;*/
-        end else
+        end else if (tx_ready && init_done)
+          nstate <= `DONE;
+        else
           nstate <= `INIT_REG;
       end
 
-      //Need to have already started the next write transaction before transitioning to
-      //INIT_REG state as the next write transaction will be thought of as being a
-      //read transaction. When sccb_core finishes its RX transaction tx_ready will assert high.
       //rx_ready indicates that data has been read from slave's register and is ready. Only increment 
       //register address if received data matches data transmitted in TX transaction.
-      //TODO: Add logic to return state machine to IDLE state to retransmit register value that failed
-      //verification.
       `VERIFY: begin
         if (rx_ready) begin 
-          inc_addr <= (rx_data == reg_data) ? 1'b1 : 1'b0; //Increment init register only if TX data matches RX data
           update_err_cnt <= 1'b1;
           if (err_cnt_q == 3) 
             nstate <= `ERROR;
-          else
-            nstate <= `VERIFY;
-        end else if (tx_ready) begin
-          start  <= 1'b1;
-          nstate <= `INIT_REG;
-        end else if (init_done) //{reg_idx_q, tx_data_q} == 24'hffff_ff 
-          nstate <= `DONE;
-        else
+          else begin
+            nstate <= `IDLE;
+            inc_addr <= (rx_data == reg_data) ? 1'b1 : 1'b0; //Increment config register only if TX data matches RX data
+          end
+        end else
           nstate <= `VERIFY;
       end
 
@@ -311,7 +285,6 @@ module sccb_top (
   end
   
   //Output Assignment
-  //sccb_top
   assign cs_tx_data_q      = tx_data_q;
   assign cs_start          = start;
   assign cs_stop           = stop;
@@ -320,7 +293,7 @@ module sccb_top (
   assign cs_err_cnt_q      = err_cnt_q;
   assign cs_update_tx_byte = update_tx_byte;
   assign cs_update_rx_byte = update_rx_byte;
-  assign cs_init_done_q    = init_done; //init_done_q;
+  assign cs_init_done      = init_done;
   assign cs_inc_addr       = inc_addr;
   assign cs_pstate_q_top   = pstate_q;
   assign cs_rx_data        = rx_data;
