@@ -65,8 +65,8 @@ module pixel_buffer (
   wire [15:0] pixel_fifo_dout;
   wire        pixel_fifo_full;
   wire        pixel_fifo_empty;
-  wire [4:0]  rd_data_count;
-  wire [4:0]  wr_data_count;
+  wire [8:0]  rd_data_count;
+  wire [8:0]  wr_data_count;
   wire        wr_rst_busy;
   wire        rd_rst_busy;
   wire        vsync_negedge;
@@ -83,8 +83,8 @@ module pixel_buffer (
     .dout         (pixel_fifo_dout),   // output wire [15 : 0] dout
     .full         (pixel_fifo_full),   // output wire full
     .empty        (pixel_fifo_empty),  // output wire empty
-    .rd_data_count(rd_data_count),     // output wire [4 : 0] rd_data_count
-    .wr_data_count(wr_data_count),     // output wire [4 : 0] wr_data_count
+    .rd_data_count(rd_data_count),     // output wire [8 : 0] rd_data_count
+    .wr_data_count(wr_data_count),     // output wire [8 : 0] wr_data_count
     .wr_rst_busy  (wr_rst_busy),       // output wire wr_rst_busy
     .rd_rst_busy  (rd_rst_busy)        // output wire rd_rst_busy
   );

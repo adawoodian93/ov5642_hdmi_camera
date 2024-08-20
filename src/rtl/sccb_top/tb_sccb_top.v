@@ -46,7 +46,6 @@ module tb_sccb_top ();
   wire        cs_sioc_lo_mst;
   wire        cs_sioc_hi_mst;
   wire [15:0] cs_clk_cnt_q;
-  wire        cs_start_clk_cnt_q;
   
   //sccb_slave
   wire       cs_siod_in_q;
@@ -114,8 +113,7 @@ module tb_sccb_top ();
     .cs_verify_reg_q   (cs_verify_reg_q  ),
     .cs_sioc_lo        (cs_sioc_lo_mst   ),
     .cs_sioc_hi        (cs_sioc_hi_mst   ),
-    .cs_clk_cnt_q      (cs_clk_cnt_q     ),
-    .cs_start_clk_cnt_q(                 )
+    .cs_clk_cnt_q      (cs_clk_cnt_q     )
   );
   
   sccb_slave #(.SIOC_FREQ(1000000)) DUT_sccb_slave (

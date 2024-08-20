@@ -45,8 +45,7 @@ module sccb_core #(
   output wire        cs_verify_reg_q,
   output wire        cs_sioc_lo,
   output wire        cs_sioc_hi,
-  output wire [15:0] cs_clk_cnt_q,
-  output wire        cs_start_clk_cnt_q
+  output wire [15:0] cs_clk_cnt_q
 );
 
   //SIOC_PERIOD equals half the number of 100MHz clock cycles in 1 SIOC_FREQ clock cycle
@@ -295,7 +294,6 @@ module sccb_core #(
   assign cs_sioc_lo         = sioc_lo;      
   assign cs_sioc_hi         = sioc_hi;     
   assign cs_clk_cnt_q       = clk_cnt_q;
-  assign cs_start_clk_cnt_q = start_clk_cnt_q;
   
 endmodule
         

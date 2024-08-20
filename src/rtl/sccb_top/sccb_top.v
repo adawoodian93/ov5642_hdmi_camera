@@ -56,8 +56,7 @@ module sccb_top (
   output wire        cs_verify_reg_q,
   output wire        cs_sioc_lo,
   output wire        cs_sioc_hi,
-  output wire [15:0] cs_clk_cnt_q,
-  output wire        cs_start_clk_cnt_q
+  output wire [15:0] cs_clk_cnt_q
 );
 
   localparam CAM_ADDRESS = 8'h78;
@@ -107,8 +106,7 @@ module sccb_top (
     .cs_verify_reg_q   (cs_verify_reg_q ),
     .cs_sioc_lo        (cs_sioc_lo      ),
     .cs_sioc_hi        (cs_sioc_hi      ),
-    .cs_clk_cnt_q      (cs_clk_cnt_q    ),
-    .cs_start_clk_cnt_q(                )
+    .cs_clk_cnt_q      (cs_clk_cnt_q    )
   );
   
   ov5642_init_regs u_init_regs (
