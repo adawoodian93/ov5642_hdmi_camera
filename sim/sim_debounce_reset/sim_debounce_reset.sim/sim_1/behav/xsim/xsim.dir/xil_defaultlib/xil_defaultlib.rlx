@@ -1,8 +1,0 @@
-0.7
-2020.2
-Oct 19 2021
-03:16:22
-C:/viv_projects/ov5642_hdmi_camera/sim/sim_debounce_reset/sim_debounce_reset.sim/sim_1/behav/xsim/glbl.v,1634335545,verilog,,,,glbl,,,,,,,,
-C:/viv_projects/ov5642_hdmi_camera/src/rtl/aasd_reset/aasd_reset.v,1722326000,verilog,,C:/viv_projects/ov5642_hdmi_camera/src/rtl/debounce/debounce.v,,aasd_reset,,,,,,,,
-C:/viv_projects/ov5642_hdmi_camera/src/rtl/aasd_reset/tb_debounce_reset.v,1722326364,verilog,,,,tb_debounce_reset,,,,,,,,
-C:/viv_projects/ov5642_hdmi_camera/src/rtl/debounce/debounce.v,1722326472,verilog,,C:/viv_projects/ov5642_hdmi_camera/src/rtl/aasd_reset/tb_debounce_reset.v,,debounce,,,,,,,,
